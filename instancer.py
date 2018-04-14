@@ -15,18 +15,66 @@ class Instancer:
 
     @staticmethod
     def search_for_instances(context):
-        selected = context.selected_objects
-        groups = {}     # list with groups of objct and its instances {obj2: [obj5, obj3], obj4: [obj1], ...}
-        for obj in selected:
-            bases = groups.keys()
+        # selected = context.selected_objects
+        groups = {}     # list with groups of objects and its instances {obj2: [obj5, obj3], obj4: [obj1], ...}
+        active = context.active_object
+        groups[active] = []
+        search_cloud = [obj for obj in bpy.data.objects if obj.type == 'MESH' and obj != context.active_object]
+        for obj in search_cloud:
+            bases = list(groups.keys())
             for base in bases:
                 if __class__.is_instance(obj, base):
                     groups[base].append(obj)
                 else:
                     groups[obj] = []
+        print(groups)
 
+    @staticmethod
+    def is_instance(obj1, obj2):
+        # dimensions
+        if not __class__.check_level_1(obj1, obj2):
+            return False
+        # len of data
+        if not __class__.check_level_2(obj1, obj2):
+            return False
+        # tris count
+        if not __class__.check_level_3(obj1, obj2):
+            return False
+        # vertex position
+        if not __class__.check_level_4(obj1, obj2):
+            return False
+        return True
 
+    @staticmethod
+    def check_level_1(obj1, obj2):
+        # dimensions
+        return obj1.dimensions == obj2.dimensions
 
+    @staticmethod
+    def check_level_2(obj1, obj2):
+        # vertices, edges, polygons count
+        return len(obj1.data.vertices) == len(obj2.data.vertices) and len(obj1.data.polygons) == len(obj2.data.polygons) and len(obj1.data.edges) == len(obj2.data.edges)
+
+    @staticmethod
+    def check_level_3(obj1, obj2):
+        # tris count
+        obj1_tris = 0
+        obj2_tris = 0
+        for polygon in obj1.data.polygons:
+            obj1_tris += len(polygon.vertices) - 2
+        for polygon in obj2.data.polygons:
+            obj2_tris += len(polygon.vertices) - 2
+        return obj1_tris == obj2_tris
+
+    @staticmethod
+    def check_level_4(obj1, obj2):
+        # vertex position with rounding
+        rez = True
+        for vert in obj1.data.vertices:
+            if vert.co != obj2.data.vertices[vert.index].co:
+                rez = False
+                break
+        return rez
 
     @staticmethod
     def sample(context):
