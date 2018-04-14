@@ -9,6 +9,7 @@
 
 
 import bpy
+import math
 
 
 class Instancer:
@@ -22,12 +23,29 @@ class Instancer:
         search_cloud = [obj for obj in bpy.data.objects if obj.type == 'MESH' and obj != context.active_object]
         for obj in search_cloud:
             bases = list(groups.keys())
+            instance_found = False
             for base in bases:
                 if __class__.is_instance(obj, base):
                     groups[base].append(obj)
-                else:
-                    groups[obj] = []
-        print(groups)
+                    instance_found = True
+                    break
+            if not instance_found:
+                groups[obj] = []
+        # convert objects in groups to instances
+        for group in groups:
+            bpy.ops.object.select_all(action='DESELECT')
+            for obj in groups[group]:
+                obj.select = True
+            group.select = True
+            context.scene.objects.active = group
+            bpy.ops.object.make_links_data(type='OBDATA')
+            # print(group, groups[group])
+        # select active object group
+        bpy.ops.object.select_all(action='DESELECT')
+        for obj in groups[active]:
+            obj.select = True
+        context.scene.objects.active = active
+        active.select = True
 
     @staticmethod
     def is_instance(obj1, obj2):
@@ -41,7 +59,7 @@ class Instancer:
         if not __class__.check_level_3(obj1, obj2):
             return False
         # vertex position
-        if not __class__.check_level_4(obj1, obj2):
+        if not __class__.check_level_4(obj1, obj2, bpy.context.window_manager.instancer_vars.vector_bit):
             return False
         return True
 
@@ -58,23 +76,34 @@ class Instancer:
     @staticmethod
     def check_level_3(obj1, obj2):
         # tris count
-        obj1_tris = 0
-        obj2_tris = 0
-        for polygon in obj1.data.polygons:
-            obj1_tris += len(polygon.vertices) - 2
-        for polygon in obj2.data.polygons:
-            obj2_tris += len(polygon.vertices) - 2
-        return obj1_tris == obj2_tris
+        if 'tris' not in obj1:
+            obj1_tris = 0
+            for polygon in obj1.data.polygons:
+                obj1_tris += len(polygon.vertices) - 2
+            obj1['tris'] = obj1_tris
+        if 'tris' not in obj2:
+            obj2_tris = 0
+            for polygon in obj2.data.polygons:
+                obj2_tris += len(polygon.vertices) - 2
+            obj2['tris'] = obj2_tris
+        return obj1['tris'] == obj2['tris']
 
     @staticmethod
-    def check_level_4(obj1, obj2):
+    def check_level_4(obj1, obj2, bit):
         # vertex position with rounding
         rez = True
         for vert in obj1.data.vertices:
-            if vert.co != obj2.data.vertices[vert.index].co:
+            # if vert.co != obj2.data.vertices[vert.index].co:
+            if not __class__.rounded_vector_comp(vert.co, obj2.data.vertices[vert.index].co, bit):
                 rez = False
                 break
         return rez
+
+    @staticmethod
+    def rounded_vector_comp(v1, v2, bit):
+        abs_tol = 1/(10**bit)
+        return math.isclose(v1[0], v2[0], abs_tol=abs_tol) and math.isclose(v1[1], v2[1], abs_tol=abs_tol) and math.isclose(v1[2], v2[2], abs_tol=abs_tol)
+
 
     @staticmethod
     def sample(context):
@@ -120,3 +149,20 @@ class Instancer:
         bpy.context.active_object.select = True
         bpy.ops.object.make_links_data(type='OBDATA')
         bpy.ops.object.select_linked(type='OBDATA')
+
+
+class InstancerVars(bpy.types.PropertyGroup):
+    vector_bit = bpy.props.IntProperty(
+        name='VectorBit',
+        default=5
+    )
+
+
+def register():
+    bpy.utils.register_class(InstancerVars)
+    bpy.types.WindowManager.instancer_vars = bpy.props.PointerProperty(type=InstancerVars)
+
+
+def unregister():
+    del bpy.types.WindowManager.instancer_vars
+    bpy.utils.unregister_class(InstancerVars)

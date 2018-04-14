@@ -20,6 +20,7 @@ class InstancerPanel(bpy.types.Panel):
 
     def draw(self, context):
         self.layout.operator('instancer.search', icon='FULLSCREEN_EXIT', text='Collaps to instances')
+        self.layout.prop(context.window_manager.instancer_vars, 'vector_bit')
 
 
 def register():

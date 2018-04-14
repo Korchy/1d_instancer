@@ -25,6 +25,7 @@ from . import instancer
 
 
 def register():
+    instancer.register()
     instancer_ops.register()
     instancer_panel.register()
 
@@ -32,6 +33,7 @@ def register():
 def unregister():
     instancer_panel.unregister()
     instancer_ops.unregister()
+    instancer.unregister()
 
 
 if __name__ == '__main__':
