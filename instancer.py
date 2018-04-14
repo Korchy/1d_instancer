@@ -16,16 +16,16 @@ class Instancer:
 
     @staticmethod
     def search_for_instances(context):
-        # selected = context.selected_objects
         groups = {}     # list with groups of objects and its instances {obj2: [obj5, obj3], obj4: [obj1], ...}
         active = context.active_object
         groups[active] = []
+        # search_cloud = context.selected_objects
         search_cloud = [obj for obj in bpy.data.objects if obj.type == 'MESH' and obj != context.active_object]
         for obj in search_cloud:
             bases = list(groups.keys())
             instance_found = False
             for base in bases:
-                if __class__.is_instance(obj, base):
+                if __class__.is_instance(obj, base, context):
                     groups[base].append(obj)
                     instance_found = True
                     break
@@ -33,13 +33,13 @@ class Instancer:
                 groups[obj] = []
         # convert objects in groups to instances
         for group in groups:
-            bpy.ops.object.select_all(action='DESELECT')
-            for obj in groups[group]:
-                obj.select = True
-            group.select = True
-            context.scene.objects.active = group
-            bpy.ops.object.make_links_data(type='OBDATA')
-            # print(group, groups[group])
+            if group == active: # only for active chain now - remove to instance all groups
+                bpy.ops.object.select_all(action='DESELECT')
+                for obj in groups[group]:
+                    obj.select = True
+                group.select = True
+                context.scene.objects.active = group
+                bpy.ops.object.make_links_data(type='OBDATA')
         # select active object group
         bpy.ops.object.select_all(action='DESELECT')
         for obj in groups[active]:
@@ -48,7 +48,7 @@ class Instancer:
         active.select = True
 
     @staticmethod
-    def is_instance(obj1, obj2):
+    def is_instance(obj1, obj2, context):
         # dimensions
         if not __class__.check_level_1(obj1, obj2):
             return False
@@ -59,7 +59,7 @@ class Instancer:
         if not __class__.check_level_3(obj1, obj2):
             return False
         # vertex position
-        if not __class__.check_level_4(obj1, obj2, bpy.context.window_manager.instancer_vars.vector_bit):
+        if not __class__.check_level_4(obj1, obj2, context.window_manager.instancer_vars.vector_bit):
             return False
         return True
 
@@ -107,11 +107,7 @@ class Instancer:
 
     @staticmethod
     def sample(context):
-
         # sample from P.K.
-
-        import bpy
-
         data = bpy.context.active_object.data
         dim = bpy.context.active_object.dimensions
         mat = bpy.context.active_object.matrix_world
@@ -121,9 +117,7 @@ class Instancer:
         LV = len(data.vertices)
         LE = len(data.edges)
         LF = len(data.polygons)
-
         name = []
-
         for i in bpy.context.visible_objects:
             temp = True
             tris = 0
@@ -140,12 +134,9 @@ class Instancer:
                                 continue
                     if temp:
                         name.append(i.name)
-
         bpy.ops.object.select_all(action='DESELECT')
-
         for i in name:
             bpy.data.objects[i].select = True
-
         bpy.context.active_object.select = True
         bpy.ops.object.make_links_data(type='OBDATA')
         bpy.ops.object.select_linked(type='OBDATA')
