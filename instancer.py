@@ -43,11 +43,11 @@ class Instancer:
                     groups[base].append(obj)
                     instance_found = True
                     break
-            if not instance_found:
-                groups[obj] = []
+            # if not instance_found:
+            #     groups[obj] = []
         # convert objects in groups to instances
         for group in groups:
-            if group == active: # only for active chain now - remove to instance all groups
+            if group == active:     # only for active chain now - remove to instance all groups
                 bpy.ops.object.select_all(action='DESELECT')
                 for obj in groups[group]:
                     obj.select = True
