@@ -6,6 +6,7 @@
 #
 # Version history:
 #   1.0. - research
+#   2018.04.17 (1.0.1) - bugfix - проверка соответстия кол-ва точке в check_level_4 и check_level_5
 
 bl_info = {
     'name': 'Instancer',
