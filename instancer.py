@@ -27,6 +27,7 @@ class Instancer:
 
     @staticmethod
     def search_for_instances(context):
+        print('-'*50)
         groups = {}     # list with groups of objects and its instances {obj2: [obj5, obj3], obj4: [obj1], ...}
         active = context.active_object
         if active:
@@ -65,16 +66,28 @@ class Instancer:
         if obj1 and obj2:
             # dimensions
             if context.window_manager.instancer_vars.level_1:
-                rez.append(__class__.check_level_1(obj1, obj2))
+                tmprez = __class__.check_level_1(obj1, obj2)
+                rez.append(tmprez)
+                if not tmprez:
+                    print(obj1, obj2, ' - Dont match by Dimenstions')
             # len of data
             if context.window_manager.instancer_vars.level_2:
-                rez.append(__class__.check_level_2(obj1, obj2))
+                tmprez = __class__.check_level_2(obj1, obj2)
+                rez.append(tmprez)
+                if not tmprez:
+                    print(obj1, obj2, ' - Dont match by Length of Data')
             # tris count
             if context.window_manager.instancer_vars.level_3:
-                rez.append(__class__.check_level_3(obj1, obj2))
+                tmprez = __class__.check_level_3(obj1, obj2)
+                rez.append(tmprez)
+                if not tmprez:
+                    print(obj1, obj2, ' - Dont match by Tris count')
             # vertex position
             if context.window_manager.instancer_vars.level_4:
-                rez.append(__class__.check_level_4(obj1, obj2, context.window_manager.instancer_vars.float_round))
+                tmprez = __class__.check_level_4(obj1, obj2, context.window_manager.instancer_vars.treshold)
+                rez.append(tmprez)
+                if not tmprez:
+                    print(obj1, obj2, ' - Dont match by Vertes position with round')
         if rez and False not in rez:
             return True
         else:
@@ -160,9 +173,10 @@ class Instancer:
 
 
 class InstancerVars(bpy.types.PropertyGroup):
-    float_round = bpy.props.FloatProperty(
-        name='FloatRound',
+    treshold = bpy.props.FloatProperty(
+        name='Threshold',
         subtype='UNSIGNED',
+        min=0.0,
         default=0.0
     )
     level_1 = bpy.props.BoolProperty(
@@ -192,7 +206,7 @@ class InstancerPanel(bpy.types.Panel):
 
     def draw(self, context):
         self.layout.operator('instancer.search', icon='FULLSCREEN_EXIT', text='Collaps to instances')
-        self.layout.prop(context.window_manager.instancer_vars, 'float_round')
+        self.layout.prop(context.window_manager.instancer_vars, 'treshold')
         self.layout.prop(context.window_manager.instancer_vars, 'level_1')
         self.layout.prop(context.window_manager.instancer_vars, 'level_2')
         self.layout.prop(context.window_manager.instancer_vars, 'level_3')
