@@ -136,9 +136,11 @@ class Instancer:
         # vertex position with tolerance
         # abs_tol - на сколько могут различаться координаты вертексов
         rez = True
-        for vert in obj1.data.vertices:
-            # if vert.co != obj2.data.vertices[vert.index].co:
-            if vert.index in obj2.data.vertices:
+        if len(obj1.data.vertices) != len(obj2.data.vertices):
+            rez = False
+        else:
+            for vert in obj1.data.vertices:
+                # if vert.co != obj2.data.vertices[vert.index].co:
                 if not __class__.rounded_vector_comp(vert.co, obj2.data.vertices[vert.index].co, abs_tol):
                     rez = False
                     break
@@ -152,32 +154,35 @@ class Instancer:
     def check_level_5(obj1, obj2, treshold):
         # vertex position with log rounding
         rez = True
-        # exp = 0 if treshold == 0 else (10**(-len(str(treshold).split('.')[1])) if treshold < 1 else 10**(len(str(treshold).split('.')[0])-1))
-        # without round
-        if treshold == 0:
-            for vert in obj1.data.vertices:
-                if vert.co != obj2.data.vertices[vert.index].co:
-                    rez = False
-                    break
-        # round < 1
-        elif treshold < 1:
-            exp = len(str(treshold).split('.')[1])
-            for vert in obj1.data.vertices:
-                if round(vert.co[0], exp) != round(obj2.data.vertices[vert.index].co[0], exp)\
-                        or round(vert.co[1], exp) != round(obj2.data.vertices[vert.index].co[1], exp)\
-                        or round(vert.co[2], exp) != round(obj2.data.vertices[vert.index].co[2], exp):
-                    rez = False
-                    break
-        # round > 1
+        if len(obj1.data.vertices) != len(obj2.data.vertices):
+            rez = False
         else:
-            # exp = len(str(treshold).split('.')[0])
-            exp = 10**(len(str(treshold).split('.')[0])-1)
-            for vert in obj1.data.vertices:
-                if int(vert.co[0]/exp)*exp != int(obj2.data.vertices[vert.index].co[0]/exp)*exp\
-                        or int(vert.co[1]/exp)*exp != int(obj2.data.vertices[vert.index].co[1]/exp)*exp\
-                        or int(vert.co[2]/exp)*exp != int(obj2.data.vertices[vert.index].co[2]/exp)*exp:
-                    rez = False
-                    break
+            # exp = 0 if treshold == 0 else (10**(-len(str(treshold).split('.')[1])) if treshold < 1 else 10**(len(str(treshold).split('.')[0])-1))
+            # without round
+            if treshold == 0:
+                for vert in obj1.data.vertices:
+                    if vert.co != obj2.data.vertices[vert.index].co:
+                        rez = False
+                        break
+            # round < 1
+            elif treshold < 1:
+                exp = len(str(treshold).split('.')[1])
+                for vert in obj1.data.vertices:
+                    if round(vert.co[0], exp) != round(obj2.data.vertices[vert.index].co[0], exp)\
+                            or round(vert.co[1], exp) != round(obj2.data.vertices[vert.index].co[1], exp)\
+                            or round(vert.co[2], exp) != round(obj2.data.vertices[vert.index].co[2], exp):
+                        rez = False
+                        break
+            # round > 1
+            else:
+                # exp = len(str(treshold).split('.')[0])
+                exp = 10**(len(str(treshold).split('.')[0])-1)
+                for vert in obj1.data.vertices:
+                    if int(vert.co[0]/exp)*exp != int(obj2.data.vertices[vert.index].co[0]/exp)*exp\
+                            or int(vert.co[1]/exp)*exp != int(obj2.data.vertices[vert.index].co[1]/exp)*exp\
+                            or int(vert.co[2]/exp)*exp != int(obj2.data.vertices[vert.index].co[2]/exp)*exp:
+                        rez = False
+                        break
         return rez
 
 
