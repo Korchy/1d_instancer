@@ -43,17 +43,17 @@ class Instancer:
                     groups[base].append(obj)
                     instance_found = True
                     break
+            # remove comment for proceccing the whole scene not only for selected object
             # if not instance_found:
             #     groups[obj] = []
         # convert objects in groups to instances
         for group in groups:
-            if group == active:     # only for active chain now - remove to instance all groups
-                bpy.ops.object.select_all(action='DESELECT')
-                for obj in groups[group]:
-                    obj.select = True
-                group.select = True
-                context.scene.objects.active = group
-                bpy.ops.object.make_links_data(type='OBDATA')
+            bpy.ops.object.select_all(action='DESELECT')
+            for obj in groups[group]:
+                obj.select = True
+            group.select = True
+            context.scene.objects.active = group
+            bpy.ops.object.make_links_data(type='OBDATA')
         # select active object group
         bpy.ops.object.select_all(action='DESELECT')
         for obj in groups[active]:
