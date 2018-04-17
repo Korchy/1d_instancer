@@ -82,12 +82,25 @@ class Instancer:
                 rez.append(tmprez)
                 if not tmprez:
                     print(obj1, obj2, ' - Dont match by Tris count')
-            # vertex position
+            # vertex position with tolerance
+            # в tolerance - на сколько могут различаться координаты вертексов
             if context.window_manager.instancer_vars.level_4:
-                tmprez = __class__.check_level_4(obj1, obj2, context.window_manager.instancer_vars.treshold)
+                tmprez = __class__.check_level_4(obj1, obj2, context.window_manager.instancer_vars.tolerance)
+                rez.append(tmprez)
+                if not tmprez:
+                    print(obj1, obj2, ' - Dont match by Vertes position with tolerance')
+            # vertex position with round
+            # в treshold - порядок округления
+            if context.window_manager.instancer_vars.level_5:
+                tmprez = __class__.check_level_5(obj1, obj2, context.window_manager.instancer_vars.treshold)
                 rez.append(tmprez)
                 if not tmprez:
                     print(obj1, obj2, ' - Dont match by Vertes position with round')
+
+            # add here more levels
+
+
+
         if rez and False not in rez:
             return True
         else:
@@ -119,20 +132,52 @@ class Instancer:
         return obj1['tris'] == obj2['tris']
 
     @staticmethod
-    def check_level_4(obj1, obj2, bit):
-        # vertex position with rounding
+    def check_level_4(obj1, obj2, abs_tol):
+        # vertex position with tolerance
+        # abs_tol - на сколько могут различаться координаты вертексов
         rez = True
         for vert in obj1.data.vertices:
             # if vert.co != obj2.data.vertices[vert.index].co:
-            if not __class__.rounded_vector_comp(vert.co, obj2.data.vertices[vert.index].co, bit):
+            if not __class__.rounded_vector_comp(vert.co, obj2.data.vertices[vert.index].co, abs_tol):
                 rez = False
                 break
         return rez
 
     @staticmethod
-    def rounded_vector_comp(v1, v2, bit):
-        abs_tol = 1/(10**bit)
+    def rounded_vector_comp(v1, v2, abs_tol):
         return math.isclose(v1[0], v2[0], abs_tol=abs_tol) and math.isclose(v1[1], v2[1], abs_tol=abs_tol) and math.isclose(v1[2], v2[2], abs_tol=abs_tol)
+
+    @staticmethod
+    def check_level_5(obj1, obj2, treshold):
+        # vertex position with log rounding
+        rez = True
+        # exp = 0 if treshold == 0 else (10**(-len(str(treshold).split('.')[1])) if treshold < 1 else 10**(len(str(treshold).split('.')[0])-1))
+        # without round
+        if treshold == 0:
+            for vert in obj1.data.vertices:
+                if vert.co != obj2.data.vertices[vert.index].co:
+                    rez = False
+                    break
+        # round < 1
+        elif treshold < 1:
+            exp = len(str(treshold).split('.')[1])
+            for vert in obj1.data.vertices:
+                if round(vert.co[0], exp) != round(obj2.data.vertices[vert.index].co[0], exp)\
+                        or round(vert.co[1], exp) != round(obj2.data.vertices[vert.index].co[1], exp)\
+                        or round(vert.co[2], exp) != round(obj2.data.vertices[vert.index].co[2], exp):
+                    rez = False
+                    break
+        # round > 1
+        else:
+            # exp = len(str(treshold).split('.')[0])
+            exp = 10**(len(str(treshold).split('.')[0])-1)
+            for vert in obj1.data.vertices:
+                if int(vert.co[0]/exp)*exp != int(obj2.data.vertices[vert.index].co[0]/exp)*exp\
+                        or int(vert.co[1]/exp)*exp != int(obj2.data.vertices[vert.index].co[1]/exp)*exp\
+                        or int(vert.co[2]/exp)*exp != int(obj2.data.vertices[vert.index].co[2]/exp)*exp:
+                    rez = False
+                    break
+        return rez
 
 
     @staticmethod
@@ -173,12 +218,6 @@ class Instancer:
 
 
 class InstancerVars(bpy.types.PropertyGroup):
-    treshold = bpy.props.FloatProperty(
-        name='Threshold',
-        subtype='UNSIGNED',
-        min=0.0,
-        default=0.0
-    )
     level_1 = bpy.props.BoolProperty(
         name='Dimensions',
         default=False
@@ -192,8 +231,26 @@ class InstancerVars(bpy.types.PropertyGroup):
         default=True
     )
     level_4 = bpy.props.BoolProperty(
+        name='Vertex position with tolerance',
+        default=True
+    )
+    tolerance = bpy.props.FloatProperty(
+        name='Tolerance',
+        subtype='UNSIGNED',
+        precision=6,
+        min=0.0,
+        default=0.0
+    )
+    level_5 = bpy.props.BoolProperty(
         name='Vertex position with round',
         default=True
+    )
+    treshold = bpy.props.FloatProperty(
+        name='Treshold',
+        subtype='UNSIGNED',
+        precision=6,
+        min=0.0,
+        default=0.01
     )
 
 
@@ -206,11 +263,13 @@ class InstancerPanel(bpy.types.Panel):
 
     def draw(self, context):
         self.layout.operator('instancer.search', icon='FULLSCREEN_EXIT', text='Collaps to instances')
-        self.layout.prop(context.window_manager.instancer_vars, 'treshold')
         self.layout.prop(context.window_manager.instancer_vars, 'level_1')
         self.layout.prop(context.window_manager.instancer_vars, 'level_2')
         self.layout.prop(context.window_manager.instancer_vars, 'level_3')
         self.layout.prop(context.window_manager.instancer_vars, 'level_4')
+        self.layout.prop(context.window_manager.instancer_vars, 'tolerance')
+        self.layout.prop(context.window_manager.instancer_vars, 'level_5')
+        self.layout.prop(context.window_manager.instancer_vars, 'treshold')
 
 
 class InstancerSearch(bpy.types.Operator):
