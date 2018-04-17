@@ -7,6 +7,17 @@
 # Version history:
 #   1.0. - research
 
+bl_info = {
+    'name': 'Instancer',
+    'category': 'All',
+    'author': 'Nikita Akimov',
+    'version': (1, 0, 0),
+    'blender': (2, 79, 0),
+    'location': 'The 3D_View window - T-panel - the 1D tab',
+    'wiki_url': 'https://github.com/Korchy/1d_instancer',
+    'tracker_url': 'https://github.com/Korchy/1d_instancer',
+    'description': 'Instancer - research'
+}
 
 import bpy
 import math
@@ -149,11 +160,41 @@ class InstancerVars(bpy.types.PropertyGroup):
     )
 
 
+class InstancerPanel(bpy.types.Panel):
+    bl_idname = 'instancer.panel'
+    bl_label = 'Instancer'
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'TOOLS'
+    bl_category = '1D'
+
+    def draw(self, context):
+        self.layout.operator('instancer.search', icon='FULLSCREEN_EXIT', text='Collaps to instances')
+        self.layout.prop(context.window_manager.instancer_vars, 'vector_bit')
+
+
+class InstancerSearch(bpy.types.Operator):
+    bl_idname = 'instancer.search'
+    bl_label = 'Search fro instances'
+    bl_options = {'REGISTER', 'UNDO'}
+
+    def execute(self, context):
+        Instancer.search_for_instances(context)
+        return {'FINISHED'}
+
+
 def register():
+    bpy.utils.register_class(InstancerSearch)
     bpy.utils.register_class(InstancerVars)
+    bpy.utils.register_class(InstancerPanel)
     bpy.types.WindowManager.instancer_vars = bpy.props.PointerProperty(type=InstancerVars)
 
 
 def unregister():
     del bpy.types.WindowManager.instancer_vars
+    bpy.utils.unregister_class(InstancerPanel)
     bpy.utils.unregister_class(InstancerVars)
+    bpy.utils.unregister_class(InstancerSearch)
+
+
+if __name__ == '__main__':
+    register()
