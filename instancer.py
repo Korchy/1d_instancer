@@ -7,12 +7,13 @@
 # Version history:
 #   1.0. - research
 #   2018.04.17 (1.0.1) - bugfix - проверка соответстия кол-ва точке в check_level_4 и check_level_5
+#   2018.04.17 (1.0.2) - improve - строки 47-48. Если закоментированы - обработка только выделенного меша, если нет - обработка всех мешей по всей сцене
 
 bl_info = {
     'name': 'Instancer',
     'category': 'All',
     'author': 'Nikita Akimov',
-    'version': (1, 0, 1),
+    'version': (1, 0, 2),
     'blender': (2, 79, 0),
     'location': 'The 3D_View window - T-panel - the 1D tab',
     'wiki_url': 'https://github.com/Korchy/1d_instancer',
