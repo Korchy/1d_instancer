@@ -138,9 +138,10 @@ class Instancer:
         rez = True
         for vert in obj1.data.vertices:
             # if vert.co != obj2.data.vertices[vert.index].co:
-            if not __class__.rounded_vector_comp(vert.co, obj2.data.vertices[vert.index].co, abs_tol):
-                rez = False
-                break
+            if vert.index in obj2.data.vertices:
+                if not __class__.rounded_vector_comp(vert.co, obj2.data.vertices[vert.index].co, abs_tol):
+                    rez = False
+                    break
         return rez
 
     @staticmethod
