@@ -29,7 +29,8 @@ class Instancer:
     def search_for_instances(context):
         groups = {}     # list with groups of objects and its instances {obj2: [obj5, obj3], obj4: [obj1], ...}
         active = context.active_object
-        groups[active] = []
+        if active:
+            groups[active] = []
         # search_cloud = context.selected_objects
         search_cloud = [obj for obj in bpy.data.objects if obj.type == 'MESH' and obj != context.active_object]
         for obj in search_cloud:
@@ -60,19 +61,24 @@ class Instancer:
 
     @staticmethod
     def is_instance(obj1, obj2, context):
-        # dimensions
-        if not __class__.check_level_1(obj1, obj2):
+        rez = []
+        if obj1 and obj2:
+            # dimensions
+            if context.window_manager.instancer_vars.level_1:
+                rez.append(__class__.check_level_1(obj1, obj2))
+            # len of data
+            if context.window_manager.instancer_vars.level_2:
+                rez.append(__class__.check_level_2(obj1, obj2))
+            # tris count
+            if context.window_manager.instancer_vars.level_3:
+                rez.append(__class__.check_level_3(obj1, obj2))
+            # vertex position
+            if context.window_manager.instancer_vars.level_4:
+                rez.append(__class__.check_level_4(obj1, obj2, context.window_manager.instancer_vars.float_round))
+        if rez and False not in rez:
+            return True
+        else:
             return False
-        # len of data
-        if not __class__.check_level_2(obj1, obj2):
-            return False
-        # tris count
-        if not __class__.check_level_3(obj1, obj2):
-            return False
-        # vertex position
-        if not __class__.check_level_4(obj1, obj2, context.window_manager.instancer_vars.vector_bit):
-            return False
-        return True
 
     @staticmethod
     def check_level_1(obj1, obj2):
@@ -154,9 +160,26 @@ class Instancer:
 
 
 class InstancerVars(bpy.types.PropertyGroup):
-    vector_bit = bpy.props.IntProperty(
-        name='VectorBit',
-        default=5
+    float_round = bpy.props.FloatProperty(
+        name='FloatRound',
+        subtype='UNSIGNED',
+        default=0.0
+    )
+    level_1 = bpy.props.BoolProperty(
+        name='Dimensions',
+        default=False
+    )
+    level_2 = bpy.props.BoolProperty(
+        name='Len of Data',
+        default=True
+    )
+    level_3 = bpy.props.BoolProperty(
+        name='Tris count',
+        default=True
+    )
+    level_4 = bpy.props.BoolProperty(
+        name='Vertex position with round',
+        default=True
     )
 
 
@@ -169,7 +192,11 @@ class InstancerPanel(bpy.types.Panel):
 
     def draw(self, context):
         self.layout.operator('instancer.search', icon='FULLSCREEN_EXIT', text='Collaps to instances')
-        self.layout.prop(context.window_manager.instancer_vars, 'vector_bit')
+        self.layout.prop(context.window_manager.instancer_vars, 'float_round')
+        self.layout.prop(context.window_manager.instancer_vars, 'level_1')
+        self.layout.prop(context.window_manager.instancer_vars, 'level_2')
+        self.layout.prop(context.window_manager.instancer_vars, 'level_3')
+        self.layout.prop(context.window_manager.instancer_vars, 'level_4')
 
 
 class InstancerSearch(bpy.types.Operator):
