@@ -14,7 +14,7 @@ bl_info = {
     'name': 'Instancer',
     'category': 'All',
     'author': 'Nikita Akimov',
-    'version': (1, 0, 2),
+    'version': (1, 0, 3),
     'blender': (2, 79, 0),
     'location': 'The 3D_View window - T-panel - the 1D tab',
     'wiki_url': 'https://github.com/Korchy/1d_instancer',
