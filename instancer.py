@@ -8,6 +8,7 @@
 #   1.0. - research
 #   2018.04.17 (1.0.1) - bugfix - проверка соответстия кол-ва точке в check_level_4 и check_level_5
 #   2018.04.17 (1.0.2) - improve - строки 48-49. Если закоментированы - обработка только выделенного меша, если нет - обработка всех мешей по всей сцене
+#   2018.04.23 (1.0.3) - improve - whole scene - на галочку
 
 bl_info = {
     'name': 'Instancer',
@@ -44,9 +45,9 @@ class Instancer:
                     groups[base].append(obj)
                     instance_found = True
                     break
-            # remove comment for proceccing the whole scene not only for selected object
-            # if not instance_found:
-            #     groups[obj] = []
+            if context.window_manager.instancer_vars.whole_scene:
+                if not instance_found:
+                    groups[obj] = []
         # convert objects in groups to instances
         for group in groups:
             bpy.ops.object.select_all(action='DESELECT')
@@ -226,6 +227,10 @@ class Instancer:
 
 
 class InstancerVars(bpy.types.PropertyGroup):
+    whole_scene = bpy.props.BoolProperty(
+        name='Whole scene',
+        default=False
+    )
     level_1 = bpy.props.BoolProperty(
         name='Dimensions',
         default=False
@@ -270,6 +275,7 @@ class InstancerPanel(bpy.types.Panel):
     bl_category = '1D'
 
     def draw(self, context):
+        self.layout.prop(context.window_manager.instancer_vars, 'whole_scene')
         self.layout.operator('instancer.search', icon='FULLSCREEN_EXIT', text='Collaps to instances')
         self.layout.prop(context.window_manager.instancer_vars, 'level_1')
         self.layout.prop(context.window_manager.instancer_vars, 'level_2')
