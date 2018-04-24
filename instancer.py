@@ -9,12 +9,13 @@
 #   2018.04.17 (1.0.1) - bugfix - проверка соответстия кол-ва точке в check_level_4 и check_level_5
 #   2018.04.17 (1.0.2) - improve - строки 48-49. Если закоментированы - обработка только выделенного меша, если нет - обработка всех мешей по всей сцене
 #   2018.04.23 (1.0.3) - improve - whole scene - на галочку
+#   2018.04.24 (1.0.4) - improve - select all instance chains, show report, check levels - to continious chain, sliders default value = 0.02,
 
 bl_info = {
     'name': 'Instancer',
     'category': 'All',
     'author': 'Nikita Akimov',
-    'version': (1, 0, 3),
+    'version': (1, 0, 4),
     'blender': (2, 79, 0),
     'location': 'The 3D_View window - T-panel - the 1D tab',
     'wiki_url': 'https://github.com/Korchy/1d_instancer',
@@ -27,6 +28,8 @@ import math
 
 
 class Instancer:
+
+    __textblock_name = 'instances_founded.txt'
 
     @staticmethod
     def search_for_instances(context):
@@ -56,68 +59,59 @@ class Instancer:
             group.select = True
             context.scene.objects.active = group
             bpy.ops.object.make_links_data(type='OBDATA')
-        # select active object group
+        # select all instance chains
         bpy.ops.object.select_all(action='DESELECT')
-        for obj in groups[active]:
-            obj.select = True
-        context.scene.objects.active = active
-        active.select = True
+        for group in groups.items():
+            if group[1]:
+                group[0].select = True
+                for mesh in group[1]:
+                    mesh.select = True
+        # show report
+        __class__.show_report(context, groups)
 
     @staticmethod
     def is_instance(obj1, obj2, context):
-        rez = []
+        rez = True
         if obj1 and obj2:
             # dimensions
-            if context.window_manager.instancer_vars.level_1:
-                tmprez = __class__.check_level_1(obj1, obj2)
-                rez.append(tmprez)
-                if not tmprez:
-                    print(obj1, obj2, ' - Dont match by Dimenstions')
+            if rez and context.window_manager.instancer_vars.level_1:
+                rez = rez and __class__.check_level_1(obj1, obj2)
             # len of data
-            if context.window_manager.instancer_vars.level_2:
-                tmprez = __class__.check_level_2(obj1, obj2)
-                rez.append(tmprez)
-                if not tmprez:
-                    print(obj1, obj2, ' - Dont match by Length of Data')
+            if rez and context.window_manager.instancer_vars.level_2:
+                rez = rez and __class__.check_level_2(obj1, obj2)
             # tris count
-            if context.window_manager.instancer_vars.level_3:
-                tmprez = __class__.check_level_3(obj1, obj2)
-                rez.append(tmprez)
-                if not tmprez:
-                    print(obj1, obj2, ' - Dont match by Tris count')
+            if rez and context.window_manager.instancer_vars.level_3:
+                rez = rez and __class__.check_level_3(obj1, obj2)
             # vertex position with tolerance
             # в tolerance - на сколько могут различаться координаты вертексов
-            if context.window_manager.instancer_vars.level_4:
-                tmprez = __class__.check_level_4(obj1, obj2, context.window_manager.instancer_vars.tolerance)
-                rez.append(tmprez)
-                if not tmprez:
-                    print(obj1, obj2, ' - Dont match by Vertes position with tolerance')
+            if rez and context.window_manager.instancer_vars.level_4:
+                rez = rez and __class__.check_level_4(obj1, obj2, context.window_manager.instancer_vars.tolerance)
             # vertex position with round
             # в treshold - порядок округления
-            if context.window_manager.instancer_vars.level_5:
-                tmprez = __class__.check_level_5(obj1, obj2, context.window_manager.instancer_vars.treshold)
-                rez.append(tmprez)
-                if not tmprez:
-                    print(obj1, obj2, ' - Dont match by Vertes position with round')
-
+            if rez and context.window_manager.instancer_vars.level_5:
+                rez = rez and __class__.check_level_5(obj1, obj2, context.window_manager.instancer_vars.treshold)
+            # materials on polygons
+            if rez and context.window_manager.instancer_vars.level_6:
+                rez = rez and __class__.check_level_6(obj1, obj2)
             # add here more levels
 
-
-
-        if rez and False not in rez:
-            return True
-        else:
-            return False
+        return rez
 
     @staticmethod
     def check_level_1(obj1, obj2):
         # dimensions
-        return obj1.dimensions == obj2.dimensions
+        rez = obj1.dimensions == obj2.dimensions
+        if not rez:
+            print(obj1, obj2, ' - Dont match by Dimenstions')
+        return rez
 
     @staticmethod
     def check_level_2(obj1, obj2):
         # vertices, edges, polygons count
-        return len(obj1.data.vertices) == len(obj2.data.vertices) and len(obj1.data.polygons) == len(obj2.data.polygons) and len(obj1.data.edges) == len(obj2.data.edges)
+        rez = len(obj1.data.vertices) == len(obj2.data.vertices) and len(obj1.data.polygons) == len(obj2.data.polygons) and len(obj1.data.edges) == len(obj2.data.edges)
+        if not rez:
+            print(obj1, obj2, ' - Dont match by Length of Data')
+        return rez
 
     @staticmethod
     def check_level_3(obj1, obj2):
@@ -132,7 +126,10 @@ class Instancer:
             for polygon in obj2.data.polygons:
                 obj2_tris += len(polygon.vertices) - 2
             obj2['tris'] = obj2_tris
-        return obj1['tris'] == obj2['tris']
+        rez = obj1['tris'] == obj2['tris']
+        if not rez:
+            print(obj1, obj2, ' - Dont match by Tris count')
+        return rez
 
     @staticmethod
     def check_level_4(obj1, obj2, abs_tol):
@@ -147,6 +144,8 @@ class Instancer:
                 if not __class__.rounded_vector_comp(vert.co, obj2.data.vertices[vert.index].co, abs_tol):
                     rez = False
                     break
+        if not rez:
+            print(obj1, obj2, ' - Dont match by Vertes position with tolerance')
         return rez
 
     @staticmethod
@@ -186,8 +185,49 @@ class Instancer:
                             or int(vert.co[2]/exp)*exp != int(obj2.data.vertices[vert.index].co[2]/exp)*exp:
                         rez = False
                         break
+        if not rez:
+            print(obj1, obj2, ' - Dont match by Vertes position with round')
         return rez
 
+    @staticmethod
+    def check_level_6(obj1, obj2):
+        # Materials on polygons
+        rez = True
+        if not rez:
+            print(obj1, obj2, ' - Dont match by Materials on polygons')
+        return rez
+
+    @staticmethod
+    def show_report(context, result_list):
+        # count
+        total_instances = 0
+        total_objects = 0
+        for group in result_list.items():
+            if group[1]:
+                total_instances += 1
+                total_objects += len(group[1]) + 1
+        # show
+        textblock = None
+        if __class__.__textblock_name in bpy.data.texts:
+            textblock = bpy.data.texts[__class__.__textblock_name]
+        else:
+            textblock = bpy.data.texts.new(name=__class__.__textblock_name)
+            textblock.name = __class__.__textblock_name
+        textblock.from_string('Linked: {} instances / {} objects'.format(total_instances, total_objects))
+        if textblock:
+            areatoshow = None
+            for area in context.screen.areas:
+                if area.type == 'TEXT_EDITOR':
+                    areatoshow = area
+            if not areatoshow:
+                for area in context.screen.areas:
+                    if area.type not in ['PROPERTIES', 'INFO', 'OUTLINER', 'VIEW_3D']:
+                        areatoshow = area
+                        break
+            if areatoshow:
+                areatoshow.type = 'TEXT_EDITOR'
+                areatoshow.spaces.active.text = textblock
+                textblock.current_line_index = 0
 
     @staticmethod
     def sample(context):
@@ -252,7 +292,7 @@ class InstancerVars(bpy.types.PropertyGroup):
         subtype='UNSIGNED',
         precision=6,
         min=0.0,
-        default=0.0
+        default=0.02
     )
     level_5 = bpy.props.BoolProperty(
         name='Vertex position with round',
@@ -263,7 +303,11 @@ class InstancerVars(bpy.types.PropertyGroup):
         subtype='UNSIGNED',
         precision=6,
         min=0.0,
-        default=0.01
+        default=0.02
+    )
+    level_6 = bpy.props.BoolProperty(
+        name='Materials',
+        default=True
     )
 
 
@@ -284,6 +328,7 @@ class InstancerPanel(bpy.types.Panel):
         self.layout.prop(context.window_manager.instancer_vars, 'tolerance')
         self.layout.prop(context.window_manager.instancer_vars, 'level_5')
         self.layout.prop(context.window_manager.instancer_vars, 'treshold')
+        self.layout.prop(context.window_manager.instancer_vars, 'level_6')
 
 
 class InstancerSearch(bpy.types.Operator):
