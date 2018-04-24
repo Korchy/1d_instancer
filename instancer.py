@@ -10,12 +10,13 @@
 #   2018.04.17 (1.0.2) - improve - строки 48-49. Если закоментированы - обработка только выделенного меша, если нет - обработка всех мешей по всей сцене
 #   2018.04.23 (1.0.3) - improve - whole scene - на галочку
 #   2018.04.24 (1.0.4) - improve - select all instance chains, show report, check levels - to continious chain, sliders default value = 0.02,
+#   2018.04.24 (1.0.5) - improve - level 6 - check equal materials on each polygons
 
 bl_info = {
     'name': 'Instancer',
     'category': 'All',
     'author': 'Nikita Akimov',
-    'version': (1, 0, 4),
+    'version': (1, 0, 5),
     'blender': (2, 79, 0),
     'location': 'The 3D_View window - T-panel - the 1D tab',
     'wiki_url': 'https://github.com/Korchy/1d_instancer',
@@ -186,13 +187,23 @@ class Instancer:
                         rez = False
                         break
         if not rez:
-            print(obj1, obj2, ' - Dont match by Vertes position with round')
+            print(obj1, obj2, ' - Dont match by Vertex position with round')
         return rez
 
     @staticmethod
     def check_level_6(obj1, obj2):
         # Materials on polygons
         rez = True
+        if obj1.data.materials and not obj2.data.materials or not obj1.data.materials and obj2.data.materials:
+            rez = False
+        # material indexes on polygons
+        elif obj1.data.materials and obj2.data.materials:
+            for polygon in obj1.data.polygons:
+                polygon1_material_index = polygon.material_index
+                polygon2_material_index = obj2.data.polygons[polygon.index].material_index
+                if obj1.data.materials[polygon1_material_index] != obj2.data.materials[polygon2_material_index]:
+                    rez = False
+                    break
         if not rez:
             print(obj1, obj2, ' - Dont match by Materials on polygons')
         return rez
