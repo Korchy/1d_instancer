@@ -11,7 +11,7 @@
 #   2018.04.23 (1.0.3) - improve - whole scene - на галочку
 #   2018.04.24 (1.0.4) - improve - select all instance chains, show report, check levels - to continious chain, sliders default value = 0.02,
 #   2018.04.24 (1.0.5) - improve - level 6 - check equal materials on each polygons
-#   2018.04.24 (1.0.6) - change - level 6 - check material slots (Data and Object)
+#   2018.04.25 (1.0.6) - change - level 6 - check material slots (Data and Object)
 
 bl_info = {
     'name': 'Instancer',
