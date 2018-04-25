@@ -11,12 +11,13 @@
 #   2018.04.23 (1.0.3) - improve - whole scene - на галочку
 #   2018.04.24 (1.0.4) - improve - select all instance chains, show report, check levels - to continious chain, sliders default value = 0.02,
 #   2018.04.24 (1.0.5) - improve - level 6 - check equal materials on each polygons
+#   2018.04.24 (1.0.6) - change - level 6 - check material slots (Data and Object)
 
 bl_info = {
     'name': 'Instancer',
     'category': 'All',
     'author': 'Nikita Akimov',
-    'version': (1, 0, 5),
+    'version': (1, 0, 6),
     'blender': (2, 79, 0),
     'location': 'The 3D_View window - T-panel - the 1D tab',
     'wiki_url': 'https://github.com/Korchy/1d_instancer',
@@ -196,12 +197,17 @@ class Instancer:
         rez = True
         if obj1.data.materials and not obj2.data.materials or not obj1.data.materials and obj2.data.materials:
             rez = False
+        elif len(obj1.material_slots) == 1 and len(obj2.material_slots) == 1 and obj1.material_slots[0].material != obj2.material_slots[0].material:
+            rez = False
         # material indexes on polygons
         elif obj1.data.materials and obj2.data.materials:
             for polygon in obj1.data.polygons:
                 polygon1_material_index = polygon.material_index
                 polygon2_material_index = obj2.data.polygons[polygon.index].material_index
-                if obj1.data.materials[polygon1_material_index] != obj2.data.materials[polygon2_material_index]:
+                if obj1.material_slots[polygon1_material_index].link != obj2.material_slots[polygon2_material_index].link:
+                    rez = False
+                    break
+                if obj1.material_slots[polygon1_material_index].material != obj2.material_slots[polygon2_material_index].material:
                     rez = False
                     break
         if not rez:
