@@ -140,7 +140,7 @@ class Instancer:
         # vertex position with tolerance
         # abs_tol - на сколько могут различаться координаты вертексов
         rez = True
-        if len(obj1.data.vertices) != len(obj2.data.vertices):
+        if not __class__.check_level_2(obj1, obj2):     # check Len of data to prevent errors
             rez = False
         else:
             for vert in obj1.data.vertices:
