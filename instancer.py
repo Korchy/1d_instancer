@@ -12,6 +12,8 @@
 #   2018.04.24 (1.0.4) - improve - select all instance chains, show report, check levels - to continious chain, sliders default value = 0.02,
 #   2018.04.24 (1.0.5) - improve - level 6 - check equal materials on each polygons
 #   2018.04.25 (1.0.6) - change - level 6 - check material slots (Data and Object)
+#   2018.04.29 (1.0.7) - bugfix - check Len of Data anyway in level_6 to prevent errors if not match polygons count
+
 
 bl_info = {
     'name': 'Instancer',
@@ -158,7 +160,7 @@ class Instancer:
     def check_level_5(obj1, obj2, treshold):
         # vertex position with log rounding
         rez = True
-        if len(obj1.data.vertices) != len(obj2.data.vertices):
+        if not __class__.check_level_2(obj1, obj2):     # check Len of data to prevent errors
             rez = False
         else:
             # exp = 0 if treshold == 0 else (10**(-len(str(treshold).split('.')[1])) if treshold < 1 else 10**(len(str(treshold).split('.')[0])-1))
@@ -195,7 +197,9 @@ class Instancer:
     def check_level_6(obj1, obj2):
         # Materials on polygons
         rez = True
-        if obj1.data.materials and not obj2.data.materials or not obj1.data.materials and obj2.data.materials:
+        if not __class__.check_level_2(obj1, obj2):     # check Len of data to prevent errors
+            rez = False
+        elif obj1.data.materials and not obj2.data.materials or not obj1.data.materials and obj2.data.materials:
             rez = False
         elif len(obj1.material_slots) == 1 and len(obj2.material_slots) == 1 and obj1.material_slots[0].material != obj2.material_slots[0].material:
             rez = False
