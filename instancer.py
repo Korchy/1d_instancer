@@ -13,6 +13,7 @@
 #   2018.04.24 (1.0.5) - improve - level 6 - check equal materials on each polygons
 #   2018.04.25 (1.0.6) - change - level 6 - check material slots (Data and Object)
 #   2018.04.29 (1.0.7) - bugfix - check Len of Data anyway in level_6 to prevent errors if not match polygons count
+#   2018.05.03 (1.0.8) - improve - Whole scene checkbox changed to selector with 5 modes of searching (A - E)
 
 
 bl_info = {
@@ -39,11 +40,34 @@ class Instancer:
     def search_for_instances(context):
         print('-'*50)
         groups = {}     # list with groups of objects and its instances {obj2: [obj5, obj3], obj4: [obj1], ...}
-        active = context.active_object
-        if active:
-            groups[active] = []
-        # search_cloud = context.selected_objects
-        search_cloud = [obj for obj in bpy.data.objects if obj.type == 'MESH' and obj != context.active_object]
+        search_cloud = []
+        search_from_cloud = False   # Search for all objects in search_cloud
+        if context.window_manager.instancer_vars.mode == 'A':
+            # Active to scene
+            search_cloud = [obj for obj in bpy.data.objects if obj.type == 'MESH' and obj != context.active_object]
+            if context.active_object:
+                groups[context.active_object] = []
+        elif context.window_manager.instancer_vars.mode == 'B':
+            # Active to selection
+            search_cloud = [obj for obj in context.selected_objects if obj.type == 'MESH' and obj != context.active_object]
+            if context.active_object:
+                groups[context.active_object] = []
+        elif context.window_manager.instancer_vars.mode == 'C':
+            # Whole selection
+            search_cloud = [obj for obj in context.selected_objects if obj.type == 'MESH']
+            search_from_cloud = True
+        elif context.window_manager.instancer_vars.mode == 'D':
+            # Selection to scene
+            search_cloud = [obj for obj in bpy.data.objects if obj.type == 'MESH' and not obj.select]
+            for obj in context.selected_objects:
+                groups[obj] = []
+        elif context.window_manager.instancer_vars.mode == 'E':
+            # Whole scene
+            search_cloud = [obj for obj in bpy.data.objects if obj.type == 'MESH' and obj != context.active_object]
+            if context.active_object:
+                groups[context.active_object] = []
+            search_from_cloud = True
+        # start searching
         for obj in search_cloud:
             bases = list(groups.keys())
             instance_found = False
@@ -52,9 +76,8 @@ class Instancer:
                     groups[base].append(obj)
                     instance_found = True
                     break
-            if context.window_manager.instancer_vars.whole_scene:
-                if not instance_found:
-                    groups[obj] = []
+            if search_from_cloud and not instance_found:
+                groups[obj] = []
         # convert objects in groups to instances
         for group in groups:
             bpy.ops.object.select_all(action='DESELECT')
@@ -288,9 +311,16 @@ class Instancer:
 
 
 class InstancerVars(bpy.types.PropertyGroup):
-    whole_scene = bpy.props.BoolProperty(
-        name='Whole scene',
-        default=False
+    mode = bpy.props.EnumProperty(
+        items=[
+            ('A', 'Active To Scene', 'Active To Scene', '', 0),
+            ('B', 'Active To Selection', 'Active To Selection', '', 1),
+            ('C', 'Selection Only', 'Selection Only', '', 2),
+            ('D', 'Selection To Scene', 'Selection To Scene', '', 3),
+            ('E', 'Whole Scene', 'Whole Scene', '', 4),
+        ],
+        name='Mode',
+        default='E'
     )
     level_1 = bpy.props.BoolProperty(
         name='Dimensions',
@@ -340,7 +370,7 @@ class InstancerPanel(bpy.types.Panel):
     bl_category = '1D'
 
     def draw(self, context):
-        self.layout.prop(context.window_manager.instancer_vars, 'whole_scene')
+        self.layout.prop(context.window_manager.instancer_vars, 'mode')
         self.layout.operator('instancer.search', icon='FULLSCREEN_EXIT', text='Collaps to instances')
         self.layout.prop(context.window_manager.instancer_vars, 'level_1')
         self.layout.prop(context.window_manager.instancer_vars, 'level_2')
