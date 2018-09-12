@@ -14,13 +14,14 @@
 #   2018.04.25 (1.0.6) - change - level 6 - check material slots (Data and Object)
 #   2018.04.29 (1.0.7) - bugfix - check Len of Data anyway in level_6 to prevent errors if not match polygons count
 #   2018.05.03 (1.0.8) - improve - Whole scene checkbox changed to selector with 5 modes of searching (A - E)
+#   2018.09.12 (1.0.9) - improve - Add preview mode (only selection without real instancing), in Level_4 check Len of data only with vertex count
 
 
 bl_info = {
     'name': 'Instancer',
     'category': 'All',
     'author': 'Nikita Akimov',
-    'version': (1, 0, 8),
+    'version': (1, 0, 9),
     'blender': (2, 79, 0),
     'location': 'The 3D_View window - T-panel - the 1D tab',
     'wiki_url': 'https://github.com/Korchy/1d_instancer',
@@ -79,13 +80,14 @@ class Instancer:
             if search_from_cloud and not instance_found:
                 groups[obj] = []
         # convert objects in groups to instances
-        for group in groups:
-            bpy.ops.object.select_all(action='DESELECT')
-            for obj in groups[group]:
-                obj.select = True
-            group.select = True
-            context.scene.objects.active = group
-            bpy.ops.object.make_links_data(type='OBDATA')
+        if not context.window_manager.instancer_vars.preview:
+            for group in groups:
+                bpy.ops.object.select_all(action='DESELECT')
+                for obj in groups[group]:
+                    obj.select = True
+                group.select = True
+                context.scene.objects.active = group
+                bpy.ops.object.make_links_data(type='OBDATA')
         # select all instance chains
         bpy.ops.object.select_all(action='DESELECT')
         for group in groups.items():
@@ -133,9 +135,16 @@ class Instancer:
         return rez
 
     @staticmethod
-    def check_level_2(obj1, obj2):
+    def check_level_2(obj1, obj2, check_verts=True, check_polygons=True, check_edges=True):
         # vertices, edges, polygons count
-        rez = len(obj1.data.vertices) == len(obj2.data.vertices) and len(obj1.data.polygons) == len(obj2.data.polygons) and len(obj1.data.edges) == len(obj2.data.edges)
+        # rez = len(obj1.data.vertices) == len(obj2.data.vertices) and len(obj1.data.polygons) == len(obj2.data.polygons) and len(obj1.data.edges) == len(obj2.data.edges)
+        rez = True
+        if check_verts:
+            rez = rez and len(obj1.data.vertices) == len(obj2.data.vertices)
+        if check_polygons:
+            rez = rez and len(obj1.data.polygons) == len(obj2.data.polygons)
+        if check_edges:
+            rez = len(obj1.data.edges) == len(obj2.data.edges)
         if not rez:
             print(obj1, obj2, ' - Dont match by Length of Data')
         return rez
@@ -163,7 +172,8 @@ class Instancer:
         # vertex position with tolerance
         # abs_tol - на сколько могут различаться координаты вертексов
         rez = True
-        if not __class__.check_level_2(obj1, obj2):     # check Len of data to prevent errors
+        # if not __class__.check_level_2(obj1, obj2):     # check Len of data to prevent errors
+        if not __class__.check_level_2(obj1, obj2, check_polygons=False, check_edges=False):     # check Len of data to prevent errors
             rez = False
         else:
             for vert in obj1.data.vertices:
@@ -322,6 +332,10 @@ class InstancerVars(bpy.types.PropertyGroup):
         name='Mode',
         default='E'
     )
+    preview = bpy.props.BoolProperty(
+        name='Preview (select only)',
+        default=False
+    )
     level_1 = bpy.props.BoolProperty(
         name='Dimensions',
         default=False
@@ -371,6 +385,7 @@ class InstancerPanel(bpy.types.Panel):
 
     def draw(self, context):
         self.layout.prop(context.window_manager.instancer_vars, 'mode')
+        self.layout.prop(context.window_manager.instancer_vars, 'preview')
         self.layout.operator('instancer.search', icon='FULLSCREEN_EXIT', text='Collaps to instances')
         self.layout.prop(context.window_manager.instancer_vars, 'level_1')
         self.layout.prop(context.window_manager.instancer_vars, 'level_2')
